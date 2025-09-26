@@ -115,8 +115,8 @@ function ReportsPage() {
     },
     {
       title: 'Total Patients',
-      value: (analytics.users.totalUsers - analytics.therapists.totalTherapists).toString(),
-      change: `${analytics.users.newUsersThisMonth} new this month`,
+      value: calculateTherapistPatients().toString(),
+      change: `${calculateNewPatientsThisMonth()} new this month`,
       icon: Users,
       color: 'from-green-500 to-teal-500'
     },
@@ -135,6 +135,38 @@ function ReportsPage() {
       color: 'from-orange-500 to-red-500'
     }
   ] : [];
+
+  const calculateTherapistPatients = () => {
+    // Get all bookings for this therapist
+    const allBookings = JSON.parse(localStorage.getItem('mindcare_bookings') || '[]');
+    const therapistBookings = allBookings.filter((booking: any) => 
+      booking.therapistName === user?.name || booking.therapistId === user?.id
+    );
+    
+    // Count unique patients
+    const uniquePatients = new Set(therapistBookings.map((booking: any) => booking.patientId));
+    return uniquePatients.size;
+  };
+
+  const calculateNewPatientsThisMonth = () => {
+    // Get all bookings for this therapist from this month
+    const allBookings = JSON.parse(localStorage.getItem('mindcare_bookings') || '[]');
+    const therapistBookings = allBookings.filter((booking: any) => 
+      booking.therapistName === user?.name || booking.therapistId === user?.id
+    );
+    
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    const newPatientsThisMonth = therapistBookings.filter((booking: any) => {
+      const bookingDate = new Date(booking.createdAt || booking.date);
+      return bookingDate >= oneMonthAgo;
+    });
+    
+    // Count unique new patients this month
+    const uniqueNewPatients = new Set(newPatientsThisMonth.map((booking: any) => booking.patientId));
+    return uniqueNewPatients.size;
+  };
 
   return (
     <div className={`h-screen flex flex-col ${
